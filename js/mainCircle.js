@@ -2,28 +2,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainCircle = document.querySelector('.main__circle');
     const canvasTransform = document.getElementById('canvasTransform');
 
-    // 사용자 정의 시작색과 끝색 (HSL의 hue 값)
-    let startColorHue = 220; // 파란색 계열
-    let endColorHue = 140;   // 초록색 계열
+    // canvasTransform에 position 설정
+    canvasTransform.style.position = 'relative';
 
-    // === 전역 커스텀 우클릭 메뉴 생성 ===
-    const customMenu = document.createElement('div');
-    customMenu.style.position = 'absolute';
-    customMenu.style.background = 'white';
-    customMenu.style.border = '1px solid #ccc';
-    customMenu.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-    customMenu.style.padding = '5px 0';
-    customMenu.style.zIndex = '9999';
-    customMenu.style.display = 'none';
-    document.body.appendChild(customMenu);
+    let startColorHue = 220; // 파랑
+    let endColorHue = 140;   // 초록
 
+    // === 선용 SVG 추가 ===
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    Object.assign(svg.style, {
+        position: 'absolute',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: '0'
+    });
+    canvasTransform.appendChild(svg);
+
+    const nodeMap = new Map();
     let currentTarget = null;
+
+    // === 우클릭 메뉴 ===
+    const customMenu = document.createElement('div');
+    Object.assign(customMenu.style, {
+        position: 'absolute',
+        background: 'white',
+        border: '1px solid #ccc',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+        padding: '5px 0',
+        zIndex: '9999',
+        display: 'none'
+    });
+    document.body.appendChild(customMenu);
 
     function createMenuItem(label, onClick) {
         const item = document.createElement('div');
         item.textContent = label;
-        item.style.padding = '5px 20px';
-        item.style.cursor = 'pointer';
+        Object.assign(item.style, {
+            padding: '5px 20px',
+            cursor: 'pointer'
+        });
         item.addEventListener('mouseover', () => item.style.background = '#eee');
         item.addEventListener('mouseout', () => item.style.background = 'white');
         item.addEventListener('click', () => {
@@ -31,6 +51,43 @@ document.addEventListener('DOMContentLoaded', () => {
             onClick();
         });
         return item;
+    }
+
+    function createLineElement(x1, y1, x2, y2) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        line.setAttribute('stroke', '#666');
+        line.setAttribute('stroke-width', '2');
+        return line;
+    }
+
+    function updateLinePosition(child, parent, line) {
+        const canvasRect = canvasTransform.getBoundingClientRect();
+        const parentRect = parent.getBoundingClientRect();
+        const childRect = child.getBoundingClientRect();
+
+        const x1 = parentRect.left + parentRect.width / 2 - canvasRect.left;
+        const y1 = parentRect.top + parentRect.height / 2 - canvasRect.top;
+        const x2 = childRect.left + childRect.width / 2 - canvasRect.left;
+        const y2 = childRect.top + childRect.height / 2 - canvasRect.top;
+
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+    }
+
+    function attachContextMenu(circleElement) {
+        circleElement.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            currentTarget = circleElement;
+            customMenu.style.left = `${e.pageX}px`;
+            customMenu.style.top = `${e.pageY}px`;
+            customMenu.style.display = 'block';
+        });
     }
 
     const editTextItem = createMenuItem('텍스트 추가/수정', () => {
@@ -56,59 +113,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const addChildCircleItem = createMenuItem('하위 원 추가', () => {
         const rect = currentTarget.getBoundingClientRect();
         const parentRect = canvasTransform.getBoundingClientRect();
-
-        // === 크기 계산 ===
         const parentSize = currentTarget.offsetWidth;
         const size = parentSize * 0.9;
 
-        // === 색상 계산 (파랑에서 초록으로 부드럽게 이동) ===
         const baseSize = 100;
-        const depthRatio = Math.min(1, Math.max(0, 1 - (size / baseSize))); // 0 ~ 1
+        const depthRatio = Math.min(1, Math.max(0, 1 - (size / baseSize)));
         const hue = startColorHue + (endColorHue - startColorHue) * depthRatio;
         const backgroundColor = `hsl(${hue}, 70%, 50%)`;
 
         const subCircle = document.createElement('div');
         subCircle.className = 'sub-circle';
-        subCircle.style.position = 'absolute';
-        subCircle.style.width = `${size}px`;
-        subCircle.style.height = `${size}px`;
-        subCircle.style.borderRadius = '50%';
-        subCircle.style.backgroundColor = backgroundColor;
-        subCircle.style.color = 'white';
-        subCircle.style.fontSize = '12px';
-        subCircle.style.display = 'flex';
-        subCircle.style.justifyContent = 'center';
-        subCircle.style.alignItems = 'center';
-        subCircle.style.zIndex = '1';
+        Object.assign(subCircle.style, {
+            position: 'absolute',
+            width: `${size}px`,
+            height: `${size}px`,
+            borderRadius: '50%',
+            backgroundColor: backgroundColor,
+            color: 'white',
+            fontSize: '12px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: '1',
+            left: `${rect.left - parentRect.left + 120}px`,
+            top: `${rect.top - parentRect.top}px`
+        });
         subCircle.textContent = '노드';
-
-        const offset = 120;
-        const relativeLeft = rect.left - parentRect.left + offset;
-        const relativeTop = rect.top - parentRect.top;
-
-        subCircle.style.left = `${relativeLeft}px`;
-        subCircle.style.top = `${relativeTop}px`;
 
         canvasTransform.appendChild(subCircle);
         attachContextMenu(subCircle);
+
+        const line = createLineElement(0, 0, 0, 0);
+        svg.appendChild(line);
+
+        // 다음 프레임에서 선 위치 계산
+        requestAnimationFrame(() => {
+            updateLinePosition(subCircle, currentTarget, line);
+        });
+
+        nodeMap.set(subCircle, { parent: currentTarget, line });
+
+        const observer = new MutationObserver(() => {
+            const data = nodeMap.get(subCircle);
+            if (data) updateLinePosition(subCircle, data.parent, data.line);
+        });
+        observer.observe(subCircle, { attributes: true, attributeFilter: ['style'] });
     });
 
     customMenu.appendChild(editTextItem);
     customMenu.appendChild(addChildCircleItem);
 
-    function attachContextMenu(circleElement) {
-        circleElement.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            customMenu.style.left = `${e.pageX}px`;
-            customMenu.style.top = `${e.pageY}px`;
-            customMenu.style.display = 'block';
-            currentTarget = circleElement;
-        });
-    }
-
-    attachContextMenu(mainCircle);
-
     document.addEventListener('click', () => {
         customMenu.style.display = 'none';
     });
+
+    if (mainCircle) {
+        attachContextMenu(mainCircle);
+        nodeMap.set(mainCircle, { parent: null, line: null });
+    }
 });
