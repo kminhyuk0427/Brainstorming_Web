@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- <link rel="stylesheet" href=".navbar.css" />
-    <link rel="stylesheet" href=".main.css" />
-    <link rel="stylesheet" href=".circle.css" /> -->
-    <link rel="stylesheet" href="styles.css" />
+    <!-- CSS 나눠서 적용 -->
+    <link rel="stylesheet" href="./css/navbar.css" />
+    <link rel="stylesheet" href="./css/camvas.css" />
+    <link rel="stylesheet" href="./css/circle.css" />
     <title>브레이너_메인화면</title>
 </head>
 
@@ -28,14 +28,21 @@
         </div>
     </header>
 
-    <!-- 드래그 가능한 컨테이너 -->
+    <!-- 드래그 및 확대 가능한 도화지 (wrapper → transform → main) -->
     <div class="canvas-wrapper" id="canvasWrapper">
-        <main class="main" id="mainContent">
-            <div class="main__circle"></div>
-        </main>
+        <div class="canvas-transform" id="canvasTransform">
+            <main class="main" id="mainContent">
+                <div class="main__circle">
+                    <canvas id="mainCanvas" class="main__canvas"></canvas>
+                    <input type="text" id="circleInput" class="main__circle-input" placeholder="텍스트 입력">
+                </div>
+            </main>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="./js/canvas.js"></script>
+    <script src="./js/mainCircle.js" defer></script>
+    <script src="./js/common.js"></script>
 </body>
 
 </html>
