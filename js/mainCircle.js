@@ -2,9 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainCircle = document.querySelector('.main__circle');
     const canvasTransform = document.getElementById('canvasTransform');
 
-    // canvasTransform에 position 설정
-    canvasTransform.style.position = 'relative';
-
     let startColorHue = 220; // 파랑
     let endColorHue = 140;   // 초록
 
@@ -55,12 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createLineElement(x1, y1, x2, y2) {
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('stroke', '#666');
+        line.setAttribute('stroke-width', '2');
         line.setAttribute('x1', x1);
         line.setAttribute('y1', y1);
         line.setAttribute('x2', x2);
         line.setAttribute('y2', y2);
-        line.setAttribute('stroke', '#666');
-        line.setAttribute('stroke-width', '2');
         return line;
     }
 
@@ -79,6 +76,62 @@ document.addEventListener('DOMContentLoaded', () => {
         line.setAttribute('x2', x2);
         line.setAttribute('y2', y2);
     }
+function makeDraggable(circleElement) {
+    let isDragging = false;
+    let isReadyToDrag = false;
+    let offsetX = 0;
+    let offsetY = 0;
+    let clickCount = 0;
+
+    circleElement.addEventListener('mousedown', (e) => {
+        e.stopPropagation(); // canvas 이동 방지
+        clickCount++;
+
+        if (clickCount === 1) {
+            // 첫 번째 클릭 후 타이머
+            setTimeout(() => {
+                clickCount = 0;
+            }, 400);
+        } else if (clickCount === 2) {
+            // 더블클릭으로 드래그 활성화
+            const rect = circleElement.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            isDragging = true;
+            isReadyToDrag = true;
+            clickCount = 0;
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging || !isReadyToDrag) return;
+
+        const canvasRect = canvasTransform.getBoundingClientRect();
+        const newLeft = e.clientX - canvasRect.left - offsetX;
+        const newTop = e.clientY - canvasRect.top - offsetY;
+
+        circleElement.style.left = `${newLeft}px`;
+        circleElement.style.top = `${newTop}px`;
+
+        // 부모-자식 선 갱신
+        const data = nodeMap.get(circleElement);
+        if (data && data.parent && data.line) {
+            updateLinePosition(circleElement, data.parent, data.line);
+        }
+
+        for (const [child, info] of nodeMap.entries()) {
+            if (info.parent === circleElement && info.line) {
+                updateLinePosition(child, circleElement, info.line);
+            }
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        isReadyToDrag = false;
+    });
+}
+
 
     function attachContextMenu(circleElement) {
         circleElement.addEventListener('contextmenu', (e) => {
@@ -88,6 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
             customMenu.style.top = `${e.pageY}px`;
             customMenu.style.display = 'block';
         });
+
+        makeDraggable(circleElement);
     }
 
     const editTextItem = createMenuItem('텍스트 추가/수정', () => {
@@ -145,19 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const line = createLineElement(0, 0, 0, 0);
         svg.appendChild(line);
-
-        // 다음 프레임에서 선 위치 계산
-        requestAnimationFrame(() => {
-            updateLinePosition(subCircle, currentTarget, line);
-        });
-
+        updateLinePosition(subCircle, currentTarget, line);
         nodeMap.set(subCircle, { parent: currentTarget, line });
-
-        const observer = new MutationObserver(() => {
-            const data = nodeMap.get(subCircle);
-            if (data) updateLinePosition(subCircle, data.parent, data.line);
-        });
-        observer.observe(subCircle, { attributes: true, attributeFilter: ['style'] });
     });
 
     customMenu.appendChild(editTextItem);
@@ -167,8 +211,5 @@ document.addEventListener('DOMContentLoaded', () => {
         customMenu.style.display = 'none';
     });
 
-    if (mainCircle) {
-        attachContextMenu(mainCircle);
-        nodeMap.set(mainCircle, { parent: null, line: null });
-    }
+    if (mainCircle) attachContextMenu(mainCircle);
 });
