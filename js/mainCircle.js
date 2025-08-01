@@ -123,31 +123,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 마우스 이동 이벤트 발생 시, 드래그 중이면 노드 위치를 업데이트합니다.
         document.addEventListener('mousemove', (e) => {
-            if (!isReadyToDrag) return; // 드래그 준비 상태가 아니면 함수 종료
-
+            if (!isReadyToDrag) return;
+        
             const canvasRect = canvasTransform.getBoundingClientRect();
             const scale = window.canvasState?.scale || 1;
-
+        
             // 마우스 위치에 따라 노드의 새로운 위치를 계산합니다.
-            const newLeft = (e.clientX - canvasRect.left - offsetX) / scale;
-            const newTop = (e.clientY - canvasRect.top - offsetY) / scale;
-
-            // 노드 위치를 업데이트합니다.
+            let newLeft = (e.clientX - canvasRect.left - offsetX) / scale;
+            let newTop = (e.clientY - canvasRect.top - offsetY) / scale;
+        
+            // 캔버스 내부에서만 움직이도록 좌표 제한 (노드 크기 고려)
+            const canvasWidth = canvasTransform.clientWidth;
+            const canvasHeight = canvasTransform.clientHeight;
+        
+            const circleWidth = circleElement.offsetWidth;
+            const circleHeight = circleElement.offsetHeight;
+        
+            newLeft = Math.min(Math.max(newLeft, 0), canvasWidth - circleWidth);
+            newTop = Math.min(Math.max(newTop, 0), canvasHeight - circleHeight);
+        
+            // 위치 반영
             circleElement.style.left = `${newLeft}px`;
             circleElement.style.top = `${newTop}px`;
-
-            // 노드 이동 후, 해당 노드와 연결된 모든 선의 위치를 업데이트합니다.
+        
+            // 연결 선 업데이트
             const data = nodeMap.get(circleElement);
             if (data && data.parent && data.line) {
                 updateLinePosition(circleElement, data.parent, data.line);
             }
-            // 이 노드의 하위 노드들과 연결된 선도 업데이트합니다.
             for (const [child, info] of nodeMap.entries()) {
                 if (info.parent === circleElement && info.line) {
                     updateLinePosition(child, circleElement, info.line);
                 }
             }
         });
+        
 
         // 마우스 업 이벤트 발생 시 드래그를 종료합니다.
         document.addEventListener('mouseup', () => {
