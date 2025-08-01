@@ -42,6 +42,11 @@ canvasWrapper.addEventListener('wheel', (e) => {
 });
 
 function updateTransform() {
+    window.canvasState = {
+        get scale() { return scale; },
+        get translateX() { return translateX; },
+        get translateY() { return translateY; }
+    };
     canvasTransform.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 }
 

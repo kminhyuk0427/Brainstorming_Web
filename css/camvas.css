@@ -1,4 +1,4 @@
-/* camvas.css */
+/* canvas.css */
 body {
     font-family: sans-serif;
     background-color: #e0e0e0;
@@ -21,14 +21,15 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    width: 3000px;
-    height: 2000px;
+    width: 4000px;
+    height: 3000px;
 
     /* 격자무늬 */
     background-image:
         linear-gradient(to right, #ccc 1px, transparent 1px),
         linear-gradient(to bottom, #ccc 1px, transparent 1px);
     background-size: 40px 40px;
+    image-rendering: pixelated; /* 격자 선명도 유지 */
 }
 
 /* 캔버스 내부 */
